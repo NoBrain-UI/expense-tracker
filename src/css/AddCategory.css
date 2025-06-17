@@ -1,0 +1,81 @@
+.add-category-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #f9fff8;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.add-category-container h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #2e7d32;
+}
+
+.add-category-container h4 {
+  margin-top: 1.5rem;
+  color: #333;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+li {
+  background-color: #e8f5e9;
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 6px;
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.add-category-input {
+  display: flex;
+  gap: 10px;
+  margin-top: 1rem;
+}
+
+.add-category-input input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.add-category-input button {
+  padding: 10px 16px;
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.add-category-input button:hover {
+  background-color: #1b5e20;
+}
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: red;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  color: darkred;
+}

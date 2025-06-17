@@ -1,0 +1,49 @@
+.navbar {
+  background-color: #0f172a;
+  padding: 1.1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.nav-links {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.link {
+  text-decoration: none;
+  color: white;
+  font-weight: 500;
+}
+
+.login-btn,
+.signup-btn,
+.logout-btn {
+  border: none;
+  padding: 6px 14px;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.login-btn {
+  background-color: #22c55e;
+}
+
+.signup-btn {
+  background-color: #3b82f6;
+}
+
+.logout-btn {
+  background-color: #ef4444;
+}
