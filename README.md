@@ -1,12 +1,19 @@
-# React + Vite
+💰 FinanceEdge – Personal Expense Tracker (React + Vite)
+This project is a personal expense tracker web application built using React and Vite, providing a fast and modern development experience with support for HMR (Hot Module Replacement).
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+It allows users to track their income and expenses, manage categories, view analytics with visual charts, and maintain their profile – all in a secure and intuitive interface.
 
-Currently, two official plugins are available:
+🚀 Features
+🔐 Authentication – Login and Signup with Firebase Authentication
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+☁️ Firestore Integration – Store user-specific data securely using Firebase Firestore
 
-## Expanding the ESLint configuration
+📊 Dashboard – Visual insights with histograms, pie charts, and bar graphs
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+💼 Expense & Income Tracking – Add, update, and delete transactions categorized as income or expense
+
+🏷️ Category Management – Add default and custom categories
+
+👤 User Profile – Update bio and user information
+
+⚡ Fast Development – Built using Vite with support for HMR
