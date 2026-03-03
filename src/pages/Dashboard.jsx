@@ -13,6 +13,7 @@ import {
   Bar,
   XAxis,
   YAxis,
+  CartesianGrid, // Added for visibility
 } from "recharts";
 
 const Dashboard = () => {
@@ -23,24 +24,16 @@ const Dashboard = () => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (!user) return;
 
-      const userTransactionsRef = collection(
-        db,
-        "users",
-        user.uid,
-        "transactions"
-      );
+      const userTransactionsRef = collection(db, "users", user.uid, "transactions");
 
-      const unsubscribeFirestore = onSnapshot(
-        userTransactionsRef,
-        (snapshot) => {
-          const data = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setTransactions(data);
-          setLoading(false);
-        }
-      );
+      const unsubscribeFirestore = onSnapshot(userTransactionsRef, (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setTransactions(data);
+        setLoading(false);
+      });
 
       return () => unsubscribeFirestore();
     });
@@ -53,7 +46,6 @@ const Dashboard = () => {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const expenseTransactions = transactions.filter((t) => t.type === "expense");
-
   const expense = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
   const balance = income - expense;
 
@@ -62,9 +54,9 @@ const Dashboard = () => {
     { name: "Expense", value: expense },
   ];
 
-  const COLORS = ["#10B981", "#EF4444"];
+  // Neon contrast colors for dark theme
+  const COLORS = ["#00ffd5", "#ff453a"]; 
 
-  // Group expense by category
   const categoryMap = {};
   expenseTransactions.forEach((t) => {
     if (!categoryMap[t.category]) categoryMap[t.category] = 0;
@@ -75,11 +67,6 @@ const Dashboard = () => {
     category: cat,
     amount: amt,
   }));
-
-  const highestCategory =
-    categoryData.length > 0
-      ? categoryData.reduce((a, b) => (a.amount > b.amount ? a : b)).category
-      : null;
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-IN", {
@@ -93,516 +80,154 @@ const Dashboard = () => {
     return (
       <div style={styles.loadingContainer}>
         <div style={styles.spinner}>⏳</div>
-        <p style={styles.loadingText}>Loading your financial data...</p>
+        <p style={styles.loadingText}>Analyzing accounts...</p>
       </div>
     );
   }
 
   return (
-    <div style={styles.pageContainer}>
+    <div style={styles.pageWrapper}>
+      <div style={styles.blob1}></div>
+      <div style={styles.blob2}></div>
+
       <div style={styles.container}>
-        {/* Header Section */}
-        <div style={styles.header}>
-          <div style={styles.iconContainer}>
-            <span style={styles.headerIcon}>📊</span>
-          </div>
-          <h2 style={styles.heading}>Financial Dashboard</h2>
-          <p style={styles.subtitle}>
-            Track your income, expenses, and savings
-          </p>
-        </div>
+        <header style={styles.header}>
+          <div style={styles.headerBadge}>DASHBOARD</div>
+          <h1 style={styles.heading}>Financial Overview</h1>
+          <p style={styles.subtitle}>Real-time monitoring of your capital flow</p>
+        </header>
 
-        {/* Summary Cards */}
         <div style={styles.summaryGrid}>
-          <div style={styles.incomeCard}>
-            <div style={styles.cardHeader}>
-              <span style={styles.cardIcon}>💰</span>
-              <span style={styles.cardLabel}>Total Income</span>
-            </div>
-            <div style={styles.cardValue}>{formatCurrency(income)}</div>
-            <div style={styles.cardTrend}>
-              <span style={styles.trendIcon}>📈</span>
-              <span style={styles.trendText}>Money In</span>
-            </div>
-          </div>
-
-          <div style={styles.expenseCard}>
-            <div style={styles.cardHeader}>
-              <span style={styles.cardIcon}>💸</span>
-              <span style={styles.cardLabel}>Total Expenses</span>
-            </div>
-            <div style={styles.cardValue}>{formatCurrency(expense)}</div>
-            <div style={styles.cardTrend}>
-              <span style={styles.trendIcon}>📉</span>
-              <span style={styles.trendText}>Money Out</span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              ...styles.balanceCard,
-              ...(balance < 0
-                ? styles.negativeBalance
-                : styles.positiveBalance),
-            }}
-          >
-            <div style={styles.cardHeader}>
-              <span style={styles.cardIcon}>🧮</span>
-              <span style={styles.cardLabel}>Net Balance</span>
-            </div>
-            <div style={styles.cardValue}>{formatCurrency(balance)}</div>
-            <div style={styles.cardTrend}>
-              <span style={styles.trendIcon}>{balance >= 0 ? "✅" : "⚠️"}</span>
-              <span style={styles.trendText}>
-                {balance >= 0 ? "Healthy" : "Deficit"}
-              </span>
-            </div>
+          <SummaryCard label="Total Income" value={formatCurrency(income)} icon="📈" />
+          <SummaryCard label="Total Expenses" value={formatCurrency(expense)} icon="📉" />
+          <div style={balance < 0 ? styles.balanceCardNegative : styles.balanceCard}>
+            <p style={styles.cardLabel}>Net Balance</p>
+            <h2 style={styles.cardValue}>{formatCurrency(balance)}</h2>
+            <div style={styles.cardStatus}>{balance >= 0 ? "SURPLUS" : "DEFICIT"}</div>
           </div>
         </div>
 
-        {/* Smart Suggestion */}
-        {highestCategory && (
-          <div style={styles.suggestionCard}>
-            <div style={styles.suggestionHeader}>
-              <span style={styles.suggestionIcon}>💡</span>
-              <span style={styles.suggestionTitle}>Smart Insight</span>
-            </div>
-            <p style={styles.suggestionText}>
-              Your highest spending category is{" "}
-              <strong>{highestCategory}</strong> with{" "}
-              {formatCurrency(categoryMap[highestCategory])}. Consider reducing
-              expenses in this area to boost your savings!
-            </p>
-          </div>
-        )}
-
-        {/* Action Button */}
-        <div style={styles.actionSection}>
-          <Link to="/add-transaction" style={styles.linkButton}>
-            <button
-              style={styles.addButton}
-              onMouseEnter={(e) => {
-                e.target.style.transform = styles.addButtonHover.transform;
-                e.target.style.boxShadow = styles.addButtonHover.boxShadow;
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = styles.addButton.transform;
-                e.target.style.boxShadow = styles.addButton.boxShadow;
-              }}
-            >
-              <span style={styles.buttonIcon}>➕</span>
-              Add New Transaction
-            </button>
-          </Link>
-        </div>
-
-        {/* Charts Section */}
         <div style={styles.chartsGrid}>
-          {/* Pie Chart */}
+          {/* Pie Chart Card */}
           <div style={styles.chartCard}>
-            <div style={styles.chartHeader}>
-              <span style={styles.chartIcon}>🥧</span>
-              <h3 style={styles.chartTitle}>Income vs Expenses</h3>
-            </div>
-            <div style={styles.chartContainer}>
-              <ResponsiveContainer width="100%" height={300}>
+            <h3 style={styles.chartTitle}>Wealth Allocation</h3>
+            <div style={{ height: 350 }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
+                    innerRadius={70}
                     outerRadius={100}
+                    paddingAngle={8}
                     dataKey="value"
-                    label={({ name, value }) =>
-                      `${name}: ${formatCurrency(value)}`
-                    }
+                    stroke="none"
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(value)} />
-                  <Legend />
+                  <Tooltip 
+                    contentStyle={styles.tooltipContent}
+                    itemStyle={{ color: "#fff" }}
+                    cursor={{ fill: 'transparent' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Bar Chart */}
-          {categoryData.length > 0 && (
-            <div style={styles.chartCard}>
-              <div style={styles.chartHeader}>
-                <span style={styles.chartIcon}>📊</span>
-                <h3 style={styles.chartTitle}>Spending by Category</h3>
-              </div>
-              <div style={styles.chartContainer}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={categoryData}>
-                    <XAxis
-                      dataKey="category"
-                      tick={{ fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 12 }}
-                      tickFormatter={(value) => `₹${value}`}
-                    />
-                    <Tooltip formatter={(value) => formatCurrency(value)} />
-                    <Bar
-                      dataKey="amount"
-                      fill="url(#barGradient)"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <defs>
-                      <linearGradient
-                        id="barGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop offset="0%" stopColor="#667eea" />
-                        <stop offset="100%" stopColor="#764ba2" />
-                      </linearGradient>
-                    </defs>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+          {/* Bar Chart Card */}
+          <div style={styles.chartCard}>
+            <h3 style={styles.chartTitle}>Spending by Category</h3>
+            <div style={{ height: 350 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={categoryData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis 
+                    dataKey="category" 
+                    stroke="#555" 
+                    tick={{ fill: '#888', fontSize: 12 }} 
+                    axisLine={{ stroke: '#222' }}
+                  />
+                  <YAxis 
+                    stroke="#555" 
+                    tick={{ fill: '#888', fontSize: 12 }} 
+                    axisLine={{ stroke: '#222' }}
+                    tickFormatter={(val) => `₹${val}`}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    contentStyle={styles.tooltipContent}
+                  />
+                  <Bar dataKey="amount" fill="#fff" radius={[6, 6, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Empty State */}
-        {transactions.length === 0 && (
-          <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>📋</div>
-            <h3 style={styles.emptyTitle}>No Transactions Yet</h3>
-            <p style={styles.emptyText}>
-              Start tracking your finances by adding your first transaction!
-            </p>
-            <Link to="/add-transaction" style={styles.linkButton}>
-              <button style={styles.emptyButton}>
-                <span style={styles.buttonIcon}>🚀</span>
-                Get Started
-              </button>
-            </Link>
-          </div>
-        )}
+        <div style={{ textAlign: "center", marginTop: "40px" }}>
+          <Link to="/add-transaction" style={{ textDecoration: "none" }}>
+            <button style={styles.actionBtn}>New Transaction</button>
+          </Link>
+        </div>
       </div>
     </div>
   );
 };
 
+const SummaryCard = ({ label, value, icon }) => (
+  <div style={styles.glassCard}>
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <p style={styles.cardLabel}>{label}</p>
+      <span>{icon}</span>
+    </div>
+    <h2 style={styles.cardValue}>{value}</h2>
+  </div>
+);
+
 const styles = {
-  pageContainer: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    padding: "2rem 1rem",
-    fontFamily:
-      "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  },
-  container: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-  },
-  header: {
-    textAlign: "center",
-    marginBottom: "3rem",
-  },
-  iconContainer: {
-    width: "80px",
-    height: "80px",
-    background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0 auto 1rem",
-    boxShadow: "0 8px 24px rgba(240, 147, 251, 0.3)",
-  },
-  headerIcon: {
-    fontSize: "2rem",
-  },
-  heading: {
-    fontSize: "2.5rem",
-    fontWeight: "700",
-    color: "white",
-    margin: "0 0 0.5rem 0",
-    textShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-  },
-  subtitle: {
-    color: "rgba(255, 255, 255, 0.8)",
-    fontSize: "1.1rem",
-    margin: 0,
-  },
-  summaryGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: "2rem",
-    marginBottom: "3rem",
-  },
-  incomeCard: {
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    padding: "2rem",
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-    borderLeft: "6px solid #10B981",
-    transition: "transform 0.3s ease, box-shadow 0.3s ease",
-  },
-  expenseCard: {
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    padding: "2rem",
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-    borderLeft: "6px solid #EF4444",
-    transition: "transform 0.3s ease, box-shadow 0.3s ease",
-  },
-  balanceCard: {
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    padding: "2rem",
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-    transition: "transform 0.3s ease, box-shadow 0.3s ease",
-  },
-  positiveBalance: {
-    borderLeft: "6px solid #10B981",
-  },
-  negativeBalance: {
-    borderLeft: "6px solid #F59E0B",
-  },
-  cardHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    marginBottom: "1rem",
-  },
-  cardIcon: {
-    fontSize: "1.5rem",
-  },
-  cardLabel: {
-    fontSize: "0.9rem",
-    fontWeight: "600",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
-  },
-  cardValue: {
-    fontSize: "2rem",
-    fontWeight: "700",
-    color: "#1F2937",
-    marginBottom: "0.5rem",
-  },
-  cardTrend: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-  },
-  trendIcon: {
-    fontSize: "1rem",
-  },
-  trendText: {
-    fontSize: "0.9rem",
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  suggestionCard: {
-    background: "linear-gradient(135deg, #FEF3C7, #FDE68A)",
-    borderRadius: "20px",
-    padding: "2rem",
-    marginBottom: "3rem",
-    border: "2px solid #F59E0B",
-    boxShadow: "0 12px 28px rgba(245, 158, 11, 0.2)",
-  },
-  suggestionHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    marginBottom: "1rem",
-  },
-  suggestionIcon: {
-    fontSize: "1.5rem",
-  },
-  suggestionTitle: {
-    fontSize: "1.25rem",
-    fontWeight: "700",
-    color: "#92400E",
-  },
-  suggestionText: {
-    fontSize: "1rem",
-    color: "#78350F",
-    lineHeight: "1.6",
-    margin: 0,
-  },
-  actionSection: {
-    textAlign: "center",
-    marginBottom: "3rem",
-  },
-  linkButton: {
-    textDecoration: "none",
-  },
-  addButton: {
-    background: "linear-gradient(135deg, #10B981, #059669)",
-    color: "white",
-    padding: "16px 32px",
-    fontSize: "1.1rem",
-    borderRadius: "16px",
-    border: "none",
-    cursor: "pointer",
-    fontWeight: "600",
-    transition: "all 0.3s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.75rem",
-    fontFamily: "inherit",
-    boxShadow: "0 12px 32px rgba(16, 185, 129, 0.3)",
-    transform: "scale(1)",
-    margin: "0 auto",
-  },
-  addButtonHover: {
-    transform: "scale(1.05)",
-    boxShadow: "0 16px 40px rgba(16, 185, 129, 0.4)",
-  },
-  buttonIcon: {
-    fontSize: "1.2rem",
-  },
-  chartsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-    gap: "2rem",
-    marginBottom: "3rem",
-  },
+  // ... (previous pageWrapper, blobs, and container styles)
+  pageWrapper: { minHeight: "100vh", backgroundColor: "#050505", color: "#fff", fontFamily: "'Inter', sans-serif", paddingTop: "120px", paddingBottom: "80px", position: "relative", overflow: "hidden" },
+  blob1: { position: "absolute", top: "-10%", right: "-5%", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%)" },
+  blob2: { position: "absolute", bottom: "10%", left: "-5%", width: "500px", height: "500px", background: "radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%)" },
+  container: { maxWidth: "1100px", margin: "0 auto", padding: "0 20px", position: "relative", zIndex: 1 },
+  header: { textAlign: "center", marginBottom: "60px" },
+  headerBadge: { fontSize: "0.75rem", fontWeight: "800", letterSpacing: "2px", color: "#555", marginBottom: "10px" },
+  heading: { fontSize: "3rem", fontWeight: "900", letterSpacing: "-2px", marginBottom: "10px" },
+  subtitle: { color: "#666", fontSize: "1.1rem" },
+  summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "40px" },
+  glassCard: { background: "rgba(255, 255, 255, 0.03)", backdropFilter: "blur(20px)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "24px", padding: "30px" },
+  balanceCard: { background: "#fff", color: "#000", borderRadius: "24px", padding: "30px", display: "flex", flexDirection: "column", justifyContent: "space-between" },
+  balanceCardNegative: { background: "rgba(255, 69, 58, 0.1)", border: "1px solid #ff453a", color: "#ff453a", borderRadius: "24px", padding: "30px" },
+  cardLabel: { fontSize: "0.85rem", fontWeight: "600", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "15px", opacity: 0.7 },
+  cardValue: { fontSize: "2rem", fontWeight: "800", margin: 0 },
+  cardStatus: { fontSize: "0.7rem", fontWeight: "900", marginTop: "15px", letterSpacing: "1px" },
+
+  chartsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(450px, 1fr))", gap: "30px" },
   chartCard: {
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    padding: "2rem",
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-  },
-  chartHeader: {
+    background: "rgba(255, 255, 255, 0.02)",
+    border: "1px solid rgba(255, 255, 255, 0.05)",
+    borderRadius: "32px",
+    padding: "30px",
     display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    marginBottom: "1.5rem",
-    paddingBottom: "1rem",
-    borderBottom: "2px solid #F3F4F6",
+    flexDirection: "column"
   },
-  chartIcon: {
-    fontSize: "1.5rem",
+  chartTitle: { fontSize: "0.8rem", fontWeight: "700", marginBottom: "20px", color: "#555", textTransform: "uppercase", letterSpacing: "1px" },
+  tooltipContent: {
+    backgroundColor: "#111", 
+    border: "1px solid #333", 
+    borderRadius: "12px", 
+    fontSize: "12px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.5)"
   },
-  chartTitle: {
-    fontSize: "1.5rem",
-    fontWeight: "600",
-    color: "#374151",
-    margin: 0,
-  },
-  chartContainer: {
-    background: "#FAFAFA",
-    borderRadius: "16px",
-    padding: "1rem",
-  },
-  emptyState: {
-    textAlign: "center",
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    padding: "4rem 2rem",
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-  },
-  emptyIcon: {
-    fontSize: "4rem",
-    marginBottom: "1rem",
-  },
-  emptyTitle: {
-    fontSize: "1.5rem",
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: "1rem",
-  },
-  emptyText: {
-    fontSize: "1rem",
-    color: "#6B7280",
-    marginBottom: "2rem",
-    lineHeight: "1.6",
-  },
-  emptyButton: {
-    background: "linear-gradient(135deg, #667eea, #764ba2)",
-    color: "white",
-    padding: "16px 32px",
-    fontSize: "1.1rem",
-    borderRadius: "16px",
-    border: "none",
-    cursor: "pointer",
-    fontWeight: "600",
-    transition: "all 0.3s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.75rem",
-    fontFamily: "inherit",
-    boxShadow: "0 12px 32px rgba(102, 126, 234, 0.3)",
-    margin: "0 auto",
-  },
-  loadingContainer: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    fontFamily:
-      "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  },
-  spinner: {
-    fontSize: "3rem",
-    marginBottom: "1rem",
-    animation: "spin 2s linear infinite",
-  },
-  loadingText: {
-    color: "white",
-    fontSize: "1.2rem",
-    fontWeight: "500",
-  },
+  actionBtn: { background: "#fff", color: "#000", border: "none", padding: "16px 40px", borderRadius: "14px", fontWeight: "800", fontSize: "1rem", cursor: "pointer", transition: "0.3s" },
+  loadingContainer: { minHeight: "100vh", backgroundColor: "#050505", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" },
+  spinner: { fontSize: "2rem", marginBottom: "20px" },
+  loadingText: { color: "#444", fontWeight: "600" }
 };
-
-// Add keyframe animation
-const additionalStyles = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  
-  .dashboard-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
-  }
-  
-  @media (max-width: 768px) {
-    .charts-grid {
-      grid-template-columns: 1fr !important;
-    }
-    
-    .summary-grid {
-      grid-template-columns: 1fr !important;
-    }
-  }
-`;
-
-// Inject styles
-if (typeof document !== "undefined") {
-  const styleSheet = document.createElement("style");
-  styleSheet.textContent = additionalStyles;
-  document.head.appendChild(styleSheet);
-}
 
 export default Dashboard;

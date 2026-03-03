@@ -1,3 +1,7 @@
+/* This targets the main div inside your App.js */
+.main-content {
+  padding-top: 80px;
+}
 * {
   margin: 0;
   padding: 0;

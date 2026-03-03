@@ -18,11 +18,10 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
 
-  // Default user avatar
+  // Premium default avatar
   const defaultAvatar =
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80";
+    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&h=200&q=80";
 
-  // Safely get user
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -30,7 +29,6 @@ const Profile = () => {
         setDisplayName(currentUser.displayName || "");
         setEmail(currentUser.email || "");
 
-        // Load bio
         const docRef = doc(db, "users", currentUser.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -47,40 +45,24 @@ const Profile = () => {
     if (!user || !user.uid) return alert("User not logged in.");
 
     try {
-      await updateProfile(user, {
-        displayName,
-      });
-
-      await setDoc(
-        doc(db, "users", user.uid),
-        { bio: bio || "" },
-        { merge: true }
-      );
-
-      // Reload user data to reflect changes
+      await updateProfile(user, { displayName });
+      await setDoc(doc(db, "users", user.uid), { bio: bio || "" }, { merge: true });
       await auth.currentUser.reload();
       setUser(auth.currentUser);
-
       alert("✅ Profile updated!");
     } catch (error) {
-      console.error("Profile update error:", error.message);
       alert("❌ Failed to update profile");
     }
   };
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
-    if (!user || !user.email) return;
+    if (!user || !user.email || !newPassword) return;
 
-    if (!newPassword) return alert("Please enter a new password.");
-
-    const currentPassword = prompt("Enter your current password to confirm:");
+    const currentPassword = prompt("Enter current password to confirm:");
     if (!currentPassword) return;
 
-    const credential = EmailAuthProvider.credential(
-      user.email,
-      currentPassword
-    );
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
 
     try {
       setPasswordLoading(true);
@@ -101,41 +83,36 @@ const Profile = () => {
   };
 
   return (
-    <div style={styles.pageContainer}>
+    <div style={styles.pageWrapper}>
+      {/* Background Glows */}
+      <div style={styles.blob1}></div>
+      <div style={styles.blob2}></div>
+
       <div style={styles.container}>
-        <div style={styles.header}>
-          <div style={styles.iconContainer}>
-            <span style={styles.icon}>👤</span>
-          </div>
-          <h2 style={styles.heading}>Profile Settings</h2>
-          <p style={styles.subtitle}>Manage your account information</p>
-        </div>
+        <header style={styles.header}>
+          <div style={styles.iconBadge}>👤</div>
+          <h2 style={styles.heading}>Account Settings</h2>
+          <p style={styles.subtext}>Manage your identity and security</p>
+        </header>
 
-        <div style={styles.profileSection}>
-          <div style={styles.profilePicContainer}>
-            <div style={styles.profilePicWrapper}>
-              <img
-                src={defaultAvatar}
-                alt="Default User Avatar"
-                style={styles.profilePic}
-              />
-              <div style={styles.userBadge}>
-                <span style={styles.userIcon}>👤</span>
-              </div>
+        {/* Profile Card */}
+        <div style={styles.glassCard}>
+          <div style={styles.profileInfoLayout}>
+            <div style={styles.avatarWrapper}>
+              <img src={defaultAvatar} alt="Avatar" style={styles.avatar} />
+              <div style={styles.statusDot}></div>
             </div>
-            <div style={styles.userInfo}>
-              <h3 style={styles.userName}>{displayName || "User"}</h3>
-              <p style={styles.userEmail}>{email}</p>
+            <div style={{ textAlign: "left" }}>
+              <h3 style={styles.profileName}>{displayName || "User Account"}</h3>
+              <p style={styles.profileEmail}>{email}</p>
             </div>
           </div>
         </div>
 
-        <div style={styles.formsContainer}>
-          <div style={styles.formCard}>
-            <div style={styles.cardHeader}>
-              <span style={styles.cardIcon}>📝</span>
-              <h3 style={styles.cardTitle}>Personal Information</h3>
-            </div>
+        <div style={styles.grid}>
+          {/* General Settings */}
+          <div style={styles.glassCard}>
+            <h3 style={styles.sectionTitle}>Personal Details</h3>
             <form onSubmit={handleProfileUpdate} style={styles.form}>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Full Name</label>
@@ -144,89 +121,51 @@ const Profile = () => {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   style={styles.input}
-                  placeholder="Enter your full name"
+                  placeholder="Your Name"
                 />
               </div>
-
               <div style={styles.inputGroup}>
-                <label style={styles.label}>Email Address</label>
-                <input
-                  type="email"
-                  value={email}
-                  readOnly
-                  style={{ ...styles.input, ...styles.readOnlyInput }}
-                />
-                <span style={styles.helperText}>Email cannot be changed</span>
-              </div>
-
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Bio</label>
+                <label style={styles.label}>Biography</label>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell us something about yourself..."
                   style={styles.textarea}
+                  placeholder="A short bio..."
                 />
               </div>
-
-              <button type="submit" style={styles.primaryButton}>
-                <span style={styles.buttonIcon}>💾</span>
-                Update Profile
-              </button>
+              <button type="submit" style={styles.primaryBtn}>Save Changes</button>
             </form>
           </div>
 
-          <div style={styles.formCard}>
-            <div style={styles.cardHeader}>
-              <span style={styles.cardIcon}>🔒</span>
-              <h3 style={styles.cardTitle}>Security Settings</h3>
-            </div>
+          {/* Security Settings */}
+          <div style={styles.glassCard}>
+            <h3 style={styles.sectionTitle}>Security</h3>
             <form onSubmit={handlePasswordChange} style={styles.form}>
               <div style={styles.inputGroup}>
-                <label style={styles.label}>New Password</label>
+                <label style={styles.label}>Update Password</label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   style={styles.input}
-                  placeholder="Enter new password"
+                  placeholder="New password"
                 />
-                <span style={styles.helperText}>
-                  Use a strong password with at least 8 characters
-                </span>
               </div>
               <button
                 type="submit"
-                style={styles.secondaryButton}
+                style={styles.secondaryBtn}
                 disabled={passwordLoading || !newPassword}
               >
-                <span style={styles.buttonIcon}>🔑</span>
-                {passwordLoading ? "Changing..." : "Change Password"}
+                {passwordLoading ? "Processing..." : "Update Password"}
               </button>
             </form>
-          </div>
-        </div>
 
-        <div style={styles.dangerZone}>
-          <div style={styles.dangerHeader}>
-            <span style={styles.dangerIcon}>⚠️</span>
-            <span style={styles.dangerTitle}>Danger Zone</span>
+            <div style={styles.divider}></div>
+            
+            <button onClick={handleLogout} style={styles.logoutBtn}>
+              Sign Out of Account
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            style={styles.logoutButton}
-            onMouseEnter={(e) => {
-              e.target.style.background = styles.logoutButtonHover.background;
-              e.target.style.transform = styles.logoutButtonHover.transform;
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = styles.logoutButton.background;
-              e.target.style.transform = styles.logoutButton.transform;
-            }}
-          >
-            <span style={styles.buttonIcon}>🚪</span>
-            Sign Out
-          </button>
         </div>
       </div>
     </div>
@@ -234,304 +173,190 @@ const Profile = () => {
 };
 
 const styles = {
-  pageContainer: {
+  pageWrapper: {
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    padding: "2rem 1rem",
-    fontFamily:
-      "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    backgroundColor: "#050505",
+    color: "#fff",
+    fontFamily: "'Inter', sans-serif",
+    paddingTop: "120px",
+    paddingBottom: "80px",
+    position: "relative",
+    overflow: "hidden",
+  },
+  blob1: {
+    position: "absolute",
+    top: "-10%",
+    right: "-5%",
+    width: "500px",
+    height: "500px",
+    background: "radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%)",
+  },
+  blob2: {
+    position: "absolute",
+    bottom: "10%",
+    left: "-5%",
+    width: "600px",
+    height: "600px",
+    background: "radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%)",
   },
   container: {
-    maxWidth: "800px",
+    maxWidth: "900px",
     margin: "0 auto",
+    padding: "0 20px",
+    position: "relative",
+    zIndex: 1,
   },
   header: {
     textAlign: "center",
-    marginBottom: "2rem",
+    marginBottom: "50px",
   },
-  iconContainer: {
-    width: "80px",
-    height: "80px",
-    background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-    borderRadius: "50%",
+  iconBadge: {
+    width: "50px",
+    height: "50px",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "14px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    margin: "0 auto 1rem",
-    boxShadow: "0 8px 24px rgba(240, 147, 251, 0.3)",
-  },
-  icon: {
-    fontSize: "2rem",
+    fontSize: "1.5rem",
+    margin: "0 auto 15px",
   },
   heading: {
-    fontSize: "2rem",
-    fontWeight: "700",
-    color: "white",
-    margin: "0 0 0.5rem 0",
-    textShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+    fontSize: "2.5rem",
+    fontWeight: "900",
+    letterSpacing: "-2px",
+    marginBottom: "8px",
   },
-  subtitle: {
-    color: "rgba(255, 255, 255, 0.8)",
+  subtext: {
+    color: "#444",
     fontSize: "1rem",
-    margin: 0,
   },
-  profileSection: {
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    padding: "2rem",
-    marginBottom: "2rem",
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-    textAlign: "center",
+  glassCard: {
+    background: "rgba(255, 255, 255, 0.02)",
+    backdropFilter: "blur(25px)",
+    border: "1px solid rgba(255, 255, 255, 0.06)",
+    borderRadius: "32px",
+    padding: "40px",
+    marginBottom: "30px",
   },
-  profilePicContainer: {
+  profileInfoLayout: {
     display: "flex",
-    flexDirection: "column",
     alignItems: "center",
-    gap: "1.5rem",
+    gap: "25px",
   },
-  profilePicWrapper: {
+  avatarWrapper: {
     position: "relative",
-    display: "inline-block",
   },
-  profilePic: {
-    width: "150px",
-    height: "150px",
-    borderRadius: "50%",
-    objectFit: "cover",
-    border: "4px solid white",
-    boxShadow: "0 12px 32px rgba(0, 0, 0, 0.15)",
-    transition: "all 0.3s ease",
-  },
-  userBadge: {
-    position: "absolute",
-    bottom: "10px",
-    right: "10px",
-    width: "40px",
-    height: "40px",
-    background: "linear-gradient(135deg, #10b981, #059669)",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
-  },
-  userIcon: {
-    fontSize: "1.2rem",
-    color: "white",
-  },
-  userInfo: {
-    textAlign: "center",
-  },
-  userName: {
-    fontSize: "1.5rem",
-    fontWeight: "600",
-    color: "#374151",
-    margin: "0 0 0.5rem 0",
-  },
-  userEmail: {
-    fontSize: "1rem",
-    color: "#6b7280",
-    margin: 0,
-  },
-  formsContainer: {
-    display: "grid",
-    gap: "2rem",
-    gridTemplateColumns: "1fr",
-  },
-  formCard: {
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
+  avatar: {
+    width: "90px",
+    height: "90px",
     borderRadius: "24px",
-    padding: "2rem",
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
+    objectFit: "cover",
+    border: "1px solid rgba(255,255,255,0.1)",
   },
-  cardHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    marginBottom: "1.5rem",
-    paddingBottom: "1rem",
-    borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
+  statusDot: {
+    position: "absolute",
+    bottom: "-4px",
+    right: "-4px",
+    width: "16px",
+    height: "16px",
+    backgroundColor: "#00ffd5",
+    borderRadius: "50%",
+    border: "3px solid #050505",
   },
-  cardIcon: {
+  profileName: {
     fontSize: "1.5rem",
+    fontWeight: "700",
+    margin: "0 0 5px 0",
   },
-  cardTitle: {
-    fontSize: "1.5rem",
-    fontWeight: "600",
-    color: "#374151",
+  profileEmail: {
+    fontSize: "0.95rem",
+    color: "#555",
     margin: 0,
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+    gap: "25px",
+  },
+  sectionTitle: {
+    fontSize: "0.8rem",
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: "1.5px",
+    color: "#444",
+    marginBottom: "30px",
   },
   form: {
     display: "flex",
     flexDirection: "column",
-    gap: "1.5rem",
+    gap: "20px",
   },
   inputGroup: {
     display: "flex",
     flexDirection: "column",
-    gap: "0.5rem",
+    gap: "10px",
   },
   label: {
-    fontSize: "0.9rem",
-    fontWeight: "600",
-    color: "#374151",
+    fontSize: "0.8rem",
+    fontWeight: "700",
+    color: "#555",
+    marginLeft: "4px",
   },
   input: {
-    padding: "16px 20px",
+    background: "rgba(255, 255, 255, 0.04)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "14px",
+    padding: "16px",
+    color: "#fff",
     fontSize: "1rem",
-    borderRadius: "12px",
-    border: "2px solid #e5e7eb",
-    background: "#ffffff",
-    transition: "all 0.3s ease",
     outline: "none",
-    fontFamily: "inherit",
-  },
-  readOnlyInput: {
-    background: "#f9fafb",
-    color: "#6b7280",
-    cursor: "not-allowed",
   },
   textarea: {
-    padding: "16px 20px",
+    background: "rgba(255, 255, 255, 0.04)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "14px",
+    padding: "16px",
+    color: "#fff",
     fontSize: "1rem",
-    borderRadius: "12px",
-    border: "2px solid #e5e7eb",
-    background: "#ffffff",
-    transition: "all 0.3s ease",
     outline: "none",
-    fontFamily: "inherit",
     minHeight: "100px",
-    resize: "vertical",
+    resize: "none",
   },
-  helperText: {
-    fontSize: "0.8rem",
-    color: "#6b7280",
-    marginTop: "0.25rem",
-  },
-  primaryButton: {
-    background: "linear-gradient(135deg, #667eea, #764ba2)",
-    color: "white",
-    padding: "16px 24px",
-    fontSize: "1rem",
-    borderRadius: "12px",
+  primaryBtn: {
+    background: "#fff",
+    color: "#000",
     border: "none",
+    padding: "16px",
+    borderRadius: "14px",
+    fontWeight: "800",
     cursor: "pointer",
-    fontWeight: "600",
-    transition: "all 0.3s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.5rem",
-    fontFamily: "inherit",
-    boxShadow: "0 8px 24px rgba(102, 126, 234, 0.3)",
   },
-  secondaryButton: {
-    background: "linear-gradient(135deg, #f59e0b, #d97706)",
-    color: "white",
-    padding: "16px 24px",
-    fontSize: "1rem",
-    borderRadius: "12px",
-    border: "none",
+  secondaryBtn: {
+    background: "rgba(255,255,255,0.05)",
+    color: "#fff",
+    border: "1px solid rgba(255,255,255,0.1)",
+    padding: "16px",
+    borderRadius: "14px",
+    fontWeight: "700",
     cursor: "pointer",
-    fontWeight: "600",
-    transition: "all 0.3s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.5rem",
-    fontFamily: "inherit",
-    boxShadow: "0 8px 24px rgba(245, 158, 11, 0.3)",
   },
-  buttonIcon: {
-    fontSize: "1rem",
+  divider: {
+    height: "1px",
+    background: "rgba(255,255,255,0.05)",
+    margin: "30px 0",
   },
-  dangerZone: {
-    marginTop: "2rem",
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    padding: "2rem",
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
-  },
-  dangerHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    marginBottom: "1rem",
-    paddingBottom: "1rem",
-    borderBottom: "1px solid rgba(239, 68, 68, 0.2)",
-  },
-  dangerIcon: {
-    fontSize: "1.5rem",
-  },
-  dangerTitle: {
-    fontSize: "1.25rem",
-    fontWeight: "600",
-    color: "#dc2626",
-  },
-  logoutButton: {
-    background: "linear-gradient(135deg, #ef4444, #dc2626)",
-    color: "white",
-    padding: "16px 24px",
-    fontSize: "1rem",
-    borderRadius: "12px",
-    border: "none",
+  logoutBtn: {
+    background: "rgba(255, 69, 58, 0.1)",
+    color: "#ff453a",
+    border: "1px solid rgba(255, 69, 58, 0.2)",
+    padding: "16px",
+    borderRadius: "14px",
+    fontWeight: "700",
     cursor: "pointer",
-    fontWeight: "600",
-    transition: "all 0.3s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.5rem",
-    fontFamily: "inherit",
-    boxShadow: "0 8px 24px rgba(239, 68, 68, 0.3)",
-    transform: "scale(1)",
-  },
-  logoutButtonHover: {
-    background: "linear-gradient(135deg, #dc2626, #b91c1c)",
-    transform: "scale(1.02)",
+    width: "100%",
   },
 };
-
-// Add focus effects and animations
-const additionalStyles = `
-  input:focus, textarea:focus {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-    transform: translateY(-1px);
-  }
-  
-  button:hover:not(:disabled) {
-    transform: translateY(-2px);
-  }
-  
-  button:active:not(:disabled) {
-    transform: translateY(0);
-  }
-  
-  button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  
-  @media (max-width: 768px) {
-    .profile-pic {
-      width: 120px !important;
-      height: 120px !important;
-    }
-  }
-`;
-
-// Inject styles
-if (typeof document !== "undefined") {
-  const styleSheet = document.createElement("style");
-  styleSheet.textContent = additionalStyles;
-  document.head.appendChild(styleSheet);
-}
 
 export default Profile;

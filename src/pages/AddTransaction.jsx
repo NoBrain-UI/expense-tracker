@@ -20,12 +20,9 @@ const AddTransaction = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        console.warn("⚠️ No user logged in.");
         setUser(null);
         return;
       }
-
-      console.log("✅ User detected:", user);
       setUser(user);
 
       try {
@@ -37,7 +34,7 @@ const AddTransaction = () => {
         const custom = snapshot.docs.map((doc) => doc.data().name);
         setCategories([...defaultCategories, ...custom]);
       } catch (err) {
-        console.error("🔥 Error fetching categories:", err);
+        console.error("Error fetching categories:", err);
       }
     });
 
@@ -46,10 +43,7 @@ const AddTransaction = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) {
-      alert("You must be logged in to add a transaction.");
-      return;
-    }
+    if (!user) return;
 
     try {
       await addDoc(collection(db, "users", user.uid, "transactions"), {
@@ -60,133 +54,125 @@ const AddTransaction = () => {
         date: new Date(date),
         createdAt: new Date(),
       });
-
-      alert("✅ Transaction added successfully!");
       navigate("/dashboard");
     } catch (err) {
-      console.error("❌ Error adding transaction:", err);
-      alert("Failed to add transaction");
+      console.error("Error adding transaction:", err);
     }
   };
 
   return (
-    <div style={styles.pageContainer}>
+    <div style={styles.pageWrapper}>
+      {/* Global CSS Injection for the Dropdown Fix */}
+      <style>
+        {`
+          select option {
+            background-color: #111 !important;
+            color: #fff !important;
+          }
+          input:focus, select:focus {
+            border-color: #fff !important;
+            background-color: rgba(255,255,255,0.08) !important;
+          }
+        `}
+      </style>
+
+      <div style={styles.blob1}></div>
+      <div style={styles.blob2}></div>
+
       <div style={styles.container}>
         <div style={styles.header}>
-          <div style={styles.iconContainer}>
-            <span style={styles.icon}>💰</span>
-          </div>
-          <h2 style={styles.heading}>Add New Transaction</h2>
-          <p style={styles.subtitle}>Track your income and expenses</p>
+          <div style={styles.iconBadge}>💰</div>
+          <h2 style={styles.heading}>New Transaction</h2>
+          <p style={styles.subtext}>Record your daily capital movement</p>
         </div>
 
         {!user ? (
-          <div style={styles.loginPrompt}>
-            <div style={styles.lockIcon}>🔒</div>
-            <p style={styles.loginText}>Please log in to add a transaction</p>
+          <div style={styles.glassCard}>
+            <p style={{ textAlign: "center", color: "#666" }}>
+              Please log in to continue.
+            </p>
           </div>
         ) : (
           <form style={styles.form} onSubmit={handleSubmit}>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Transaction Title</label>
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="e.g., Grocery shopping, Salary, Coffee..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </div>
-
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Amount</label>
-              <div style={styles.amountContainer}>
-                <span style={styles.currencySymbol}>$</span>
+            <div style={styles.glassCard}>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Description</label>
                 <input
-                  style={styles.amountInput}
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  style={styles.input}
+                  type="text"
+                  placeholder="e.g. Starbucks, Monthly Rent..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                   required
                 />
               </div>
-            </div>
 
-            <div style={styles.row}>
-              <div style={styles.halfWidth}>
-                <label style={styles.label}>Type</label>
-                <select
-                  style={{
-                    ...styles.select,
-                    background:
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Amount (INR)</label>
+                <div style={styles.amountWrapper}>
+                  <span style={styles.currency}>₹</span>
+                  <input
+                    style={styles.amountInput}
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={styles.row}>
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Type</label>
+                  <select
+                    style={
                       type === "income"
-                        ? "linear-gradient(135deg, #10b981, #059669)"
-                        : "#ffffff",
-                    color: type === "income" ? "white" : "#374151",
-                    border:
-                      type === "expense"
-                        ? "2px solid #f97316"
-                        : "2px solid #e5e7eb",
-                    boxShadow:
-                      type === "expense"
-                        ? "0 0 0 3px rgba(249, 115, 22, 0.1)"
-                        : "none",
-                  }}
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                >
-                  <option
-                    value="expense"
-                    style={{ background: "#ffffff", color: "#374151" }}
+                        ? styles.selectIncome
+                        : styles.selectExpense
+                    }
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
                   >
-                    💸 Expense
-                  </option>
-                  <option
-                    value="income"
-                    style={{ background: "#059669", color: "white" }}
+                    <option value="expense">Expense</option>
+                    <option value="income">Income</option>
+                  </select>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Category</label>
+                  <select
+                    style={styles.select}
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    required
                   >
-                    💵 Income
-                  </option>
-                </select>
+                    <option value="">Select...</option>
+                    {categories.map((cat, i) => (
+                      <option key={i} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div style={styles.halfWidth}>
-                <label style={styles.label}>Category</label>
-                <select
-                  style={styles.select}
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Timestamp</label>
+                <input
+                  style={styles.input}
+                  type="datetime-local"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
                   required
-                >
-                  <option value="">🏷️ Select Category</option>
-                  {categories.map((cat, i) => (
-                    <option key={i} value={cat}>
-                      {getCategoryIcon(cat)} {cat}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
-            </div>
 
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Date & Time</label>
-              <input
-                style={styles.input}
-                type="datetime-local"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
+              <button style={styles.submitBtn} type="submit">
+                Complete Transaction
+              </button>
             </div>
-
-            <button style={styles.button} type="submit">
-              <span style={styles.buttonIcon}>✨</span>
-              Add Transaction
-              <span style={styles.buttonIcon}>→</span>
-            </button>
           </form>
         )}
       </div>
@@ -194,211 +180,175 @@ const AddTransaction = () => {
   );
 };
 
-const getCategoryIcon = (category) => {
-  const icons = {
-    Food: "🍽️",
-    Travel: "✈️",
-    Bills: "📄",
-    Shopping: "🛍️",
-    Health: "🏥",
-  };
-  return icons[category] || "📋";
-};
-
 const styles = {
-  pageContainer: {
+  pageWrapper: {
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    padding: "2rem 1rem",
-    fontFamily:
-      "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    backgroundColor: "#050505",
+    color: "#fff",
+    fontFamily: "'Inter', sans-serif",
+    paddingTop: "120px",
+    paddingBottom: "60px",
+    position: "relative",
+    overflow: "hidden",
+  },
+  blob1: {
+    position: "absolute",
+    top: "-10%",
+    right: "-5%",
+    width: "500px",
+    height: "500px",
+    background:
+      "radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%)",
+  },
+  blob2: {
+    position: "absolute",
+    bottom: "10%",
+    left: "-5%",
+    width: "600px",
+    height: "600px",
+    background:
+      "radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%)",
   },
   container: {
-    maxWidth: "500px",
+    maxWidth: "550px",
     margin: "0 auto",
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    padding: "2rem",
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
+    padding: "0 20px",
+    position: "relative",
+    zIndex: 1,
   },
   header: {
     textAlign: "center",
-    marginBottom: "2rem",
+    marginBottom: "40px",
   },
-  iconContainer: {
-    width: "80px",
-    height: "80px",
-    background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-    borderRadius: "50%",
+  iconBadge: {
+    width: "50px",
+    height: "50px",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "14px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    margin: "0 auto 1rem",
-    boxShadow: "0 8px 24px rgba(240, 147, 251, 0.3)",
-  },
-  icon: {
-    fontSize: "2rem",
+    fontSize: "1.5rem",
+    margin: "0 auto 15px",
   },
   heading: {
-    fontSize: "2rem",
-    fontWeight: "700",
-    color: "#1f2937",
-    margin: "0 0 0.5rem 0",
-    background: "linear-gradient(135deg, #667eea, #764ba2)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
+    fontSize: "2.5rem",
+    fontWeight: "900",
+    letterSpacing: "-2px",
+    marginBottom: "8px",
   },
-  subtitle: {
-    color: "#6b7280",
+  subtext: {
+    color: "#444",
     fontSize: "1rem",
-    margin: 0,
   },
-  loginPrompt: {
-    textAlign: "center",
-    padding: "3rem 2rem",
-    background: "linear-gradient(135deg, #fee2e2, #fecaca)",
-    borderRadius: "16px",
-    border: "1px solid #fca5a5",
-  },
-  lockIcon: {
-    fontSize: "3rem",
-    marginBottom: "1rem",
-  },
-  loginText: {
-    color: "#dc2626",
-    fontSize: "1.1rem",
-    fontWeight: "500",
-    margin: 0,
-  },
-  form: {
+  glassCard: {
+    background: "rgba(255, 255, 255, 0.02)",
+    backdropFilter: "blur(25px)",
+    border: "1px solid rgba(255, 255, 255, 0.06)",
+    borderRadius: "32px",
+    padding: "40px",
     display: "flex",
     flexDirection: "column",
-    gap: "1.5rem",
+    gap: "25px",
   },
   inputGroup: {
     display: "flex",
     flexDirection: "column",
-    gap: "0.5rem",
+    gap: "10px",
   },
   label: {
-    fontSize: "0.9rem",
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: "0.25rem",
+    fontSize: "0.8rem",
+    fontWeight: "700",
+    color: "#555",
+    textTransform: "uppercase",
+    letterSpacing: "1px",
+    marginLeft: "4px",
   },
   input: {
-    padding: "16px 20px",
+    background: "rgba(255, 255, 255, 0.04)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "14px",
+    padding: "16px",
+    color: "#fff",
     fontSize: "1rem",
-    borderRadius: "12px",
-    border: "2px solid #e5e7eb",
-    background: "#ffffff",
-    transition: "all 0.3s ease",
     outline: "none",
-    fontFamily: "inherit",
+    transition: "0.3s",
   },
-  amountContainer: {
+  amountWrapper: {
     position: "relative",
     display: "flex",
     alignItems: "center",
   },
-  currencySymbol: {
+  currency: {
     position: "absolute",
-    left: "20px",
+    left: "18px",
     fontSize: "1.2rem",
+    color: "#888",
     fontWeight: "600",
-    color: "#6b7280",
-    zIndex: 1,
   },
   amountInput: {
-    padding: "16px 20px 16px 40px",
-    fontSize: "1rem",
-    borderRadius: "12px",
-    border: "2px solid #e5e7eb",
-    background: "#ffffff",
-    transition: "all 0.3s ease",
-    outline: "none",
-    fontFamily: "inherit",
     width: "100%",
+    background: "rgba(255, 255, 255, 0.04)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "14px",
+    padding: "16px 16px 16px 45px",
+    color: "#fff",
+    fontSize: "1.2rem",
+    fontWeight: "700",
+    outline: "none",
   },
   row: {
     display: "flex",
-    gap: "1rem",
-  },
-  halfWidth: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.5rem",
+    gap: "15px",
   },
   select: {
-    padding: "16px 20px",
-    fontSize: "1rem",
-    borderRadius: "12px",
-    border: "2px solid #e5e7eb",
-    background: "#ffffff",
-    transition: "all 0.3s ease",
+    width: "100%",
+    background: "rgba(255, 255, 255, 0.04)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "14px",
+    padding: "16px",
+    color: "#fff",
+    fontSize: "0.95rem",
     outline: "none",
-    fontFamily: "inherit",
     cursor: "pointer",
   },
-  button: {
-    background: "linear-gradient(135deg, #10b981, #059669)",
-    color: "white",
-    padding: "18px 24px",
-    fontSize: "1.1rem",
-    borderRadius: "16px",
+  selectExpense: {
+    width: "100%",
+    background: "rgba(255, 69, 58, 0.05)",
+    border: "1px solid rgba(255, 69, 58, 0.2)",
+    borderRadius: "14px",
+    padding: "16px",
+    color: "#ff453a",
+    fontSize: "0.95rem",
+    fontWeight: "700",
+    outline: "none",
+    cursor: "pointer",
+  },
+  selectIncome: {
+    width: "100%",
+    background: "rgba(0, 255, 213, 0.05)",
+    border: "1px solid rgba(0, 255, 213, 0.2)",
+    borderRadius: "14px",
+    padding: "16px",
+    color: "#00ffd5",
+    fontSize: "0.95rem",
+    fontWeight: "700",
+    outline: "none",
+    cursor: "pointer",
+  },
+  submitBtn: {
+    background: "#fff",
+    color: "#000",
     border: "none",
-    cursor: "pointer",
-    fontWeight: "600",
-    transition: "all 0.3s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.5rem",
-    fontFamily: "inherit",
-    boxShadow: "0 8px 24px rgba(16, 185, 129, 0.3)",
-    marginTop: "1rem",
-  },
-  buttonIcon: {
+    padding: "18px",
+    borderRadius: "16px",
     fontSize: "1rem",
+    fontWeight: "800",
+    cursor: "pointer",
+    marginTop: "10px",
+    transition: "0.3s",
   },
 };
-
-// Add hover effects using CSS-in-JS approach
-const originalButton = styles.button;
-styles.button = {
-  ...originalButton,
-  ":hover": {
-    transform: "translateY(-2px)",
-    boxShadow: "0 12px 32px rgba(16, 185, 129, 0.4)",
-  },
-};
-
-// Add focus effects for inputs
-const inputFocusStyle = `
-  input:focus, select:focus {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-    transform: translateY(-1px);
-  }
-  
-  button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.4);
-  }
-  
-  button:active {
-    transform: translateY(0);
-  }
-`;
-
-// Inject styles
-if (typeof document !== "undefined") {
-  const styleSheet = document.createElement("style");
-  styleSheet.textContent = inputFocusStyle;
-  document.head.appendChild(styleSheet);
-}
 
 export default AddTransaction;
